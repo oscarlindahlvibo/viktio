@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { updateWeightAndGoals } from '@/lib/goals';
 import { useAuth } from '@/components/providers/auth-provider';
 import type { WeightEntry, Profile, UserGoal } from '@/lib/types';
 import { Plus, TrendingDown, Target, Award, X, Scale } from 'lucide-react';
@@ -14,7 +15,7 @@ import {
 import { calculateBMI, bmiCategory } from '@/lib/health';
 
 export default function DevelopmentPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
   const [goal, setGoal] = useState<UserGoal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +62,9 @@ export default function DevelopmentPage() {
     if (error) {
       toast.error('Kunde inte spara');
     } else {
+      // A new weight changes the calorie target, so the points budget follows it.
+      await updateWeightAndGoals(user.id, parseFloat(weight)).catch(() => undefined);
+      await refreshProfile();
       toast.success('Vikt sparad!');
       setShowAdd(false);
       setWeight('');

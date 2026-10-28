@@ -8,18 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import {
-  calculateBMI,
-  calculateBMR,
-  calculateTDEE,
-  calculateCalorieTarget,
-  calculateDailyPoints,
-  calculateProteinTarget,
-  calculateWeeklyPoints,
-  calculateAge,
-  estimateProgress,
-  bmiCategory,
-} from '@/lib/health';
+import { computeGoals, saveGoals } from '@/lib/goals';
 import type { Sex, ActivityLevel, WeightLossPace } from '@/lib/types';
 import {
   ChevronLeft,
@@ -117,14 +106,14 @@ export default function OnboardingPage() {
       const hCm = parseFloat(heightCm);
       const cWeight = parseFloat(currentWeight);
       const tWeight = parseFloat(targetWeight);
-      const age = calculateAge(dateOfBirth);
-      const bmi = calculateBMI(cWeight, hCm);
-      const bmr = calculateBMR(sex, cWeight, hCm, age);
-      const tdee = calculateTDEE(bmr, activityLevel);
-      const calorieTarget = calculateCalorieTarget(tdee, pace);
-      const proteinTarget = calculateProteinTarget(cWeight);
-      const dailyPoints = calculateDailyPoints(calorieTarget, proteinTarget, activityLevel);
-      const weeklyPool = calculateWeeklyPoints(dailyPoints);
+      const goals = computeGoals({
+        sex: sex as Sex,
+        dateOfBirth,
+        heightCm: hCm,
+        weightKg: cWeight,
+        activityLevel,
+        pace,
+      });
 
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: user.id,
@@ -148,37 +137,7 @@ export default function OnboardingPage() {
 
       if (profileError) throw profileError;
 
-      const { data: existingGoal } = await supabase
-        .from('user_goals')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existingGoal) {
-        await supabase
-          .from('user_goals')
-          .update({
-            bmi,
-            bmr,
-            tdee,
-            calorie_target: calorieTarget,
-            daily_points_budget: dailyPoints,
-            weekly_points_pool: weeklyPool,
-            protein_target_g: proteinTarget,
-          })
-          .eq('id', existingGoal.id);
-      } else {
-        await supabase.from('user_goals').insert({
-          user_id: user.id,
-          bmi,
-          bmr,
-          tdee,
-          calorie_target: calorieTarget,
-          daily_points_budget: dailyPoints,
-          weekly_points_pool: weeklyPool,
-          protein_target_g: proteinTarget,
-        });
-      }
+      await saveGoals(user.id, goals);
 
       await refreshProfile();
       toast.success('Välkommen till Viktio, ' + firstName + '!');

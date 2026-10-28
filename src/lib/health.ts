@@ -39,21 +39,16 @@ export function calculateCalorieTarget(tdee: number, pace: WeightLossPace): numb
   return Math.max(tdee - PACE_DEFICITS[pace], 1200);
 }
 
-export function calculateDailyPoints(
-  calorieTarget: number,
-  proteinTargetG: number,
-  activity: ActivityLevel,
-): number {
-  const base = 30;
-  const activityBonus: Record<ActivityLevel, number> = {
-    sedentary: 0,
-    light: 2,
-    moderate: 4,
-    active: 6,
-    very_active: 8,
-  };
-  const proteinAdj = proteinTargetG > 150 ? 2 : 0;
-  return Math.round(base + activityBonus[activity] + proteinAdj);
+// About 100 kcal of everyday food costs 3 points; zero-point foods (vegetables, fruit, lean protein)
+// are expected to cover roughly a quarter of the calorie target.
+const POINTS_PER_KCAL = 0.03;
+const SHARE_FROM_POINT_FOODS = 0.75;
+export const MIN_DAILY_POINTS = 23;
+export const MAX_DAILY_POINTS = 60;
+
+export function calculateDailyPoints(calorieTarget: number): number {
+  const points = Math.round(calorieTarget * SHARE_FROM_POINT_FOODS * POINTS_PER_KCAL);
+  return Math.min(Math.max(points, MIN_DAILY_POINTS), MAX_DAILY_POINTS);
 }
 
 export function calculateProteinTarget(weightKg: number): number {
