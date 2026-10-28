@@ -216,6 +216,7 @@ export default function RecipeDetailPage() {
                     <p className="text-xs text-muted-foreground">
                       {Math.round(scaledWeight)}g
                       {ing.confidence === 'low' && ' • Kontrollera ingrediens'}
+                      {ing.confidence === 'unmatched' && ' • Hittades inte, räknas som 0'}
                     </p>
                   </div>
                   <span className="text-sm font-semibold">{formatPoints(scaledPoints)}</span>

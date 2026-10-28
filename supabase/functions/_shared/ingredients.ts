@@ -46,6 +46,8 @@ const PIECE_WEIGHTS: [RegExp, number][] = [
   [/vitlök|klyft/, 5],
   [/schalottenlök/, 30],
   [/rödlök|gul lök|^lök|purjolök/, 100],
+  [/äggul/, 18],
+  [/äggvit/, 33],
   [/ägg/, 55],
   [/potatis/, 100],
   [/morot|morötter/, 70],
@@ -74,7 +76,13 @@ const PIECE_WEIGHTS: [RegExp, number][] = [
 
 // Rewrites from common recipe wording to the names used in the food database.
 const SYNONYMS: [RegExp, string][] = [
-  [/^(vitlöksklyft\w*|klyft\w* vitlök)$/, 'vitlök'],
+  [/^(vitlöksklyft[a-zåäö]*|klyft[a-zåäö]* vitlök)$/, 'vitlök'],
+  [/^(spaghetti|spagetti|penne|makaroner|tagliatelle|fusilli|farfalle|rigatoni|linguine|pappardelle|fullkornspasta|pasta|lasagneplattor)$/, 'pasta okokt'],
+  [/^(pancetta|guanciale|sidfläsk|rökt sidfläsk|baconbitar)$/, 'bacon'],
+  [/^(pecorino|pecorinoost|parmesan|parmesanost|grana padano|parmigiano reggiano|parmigiano)$/, 'ost hårdost parmesan fett 30% typ parmiggiano reggiano'],
+  [/^schalottenlök[a-zåäö]*$/, 'lök gul'],
+  [/^äggul(a|or)$/, 'äggula rå'],
+  [/^äggvit(a|or)$/, 'äggvita rå'],
   [/^(riven ost|ost|hushållsost|prästost|cheddar)$/, 'ost hårdost fett 28%'],
   [/^grädde$/, 'vispgrädde'],
   [/^(strösocker|socker)$/, 'socker'],
@@ -82,8 +90,8 @@ const SYNONYMS: [RegExp, string][] = [
   [/^köttfärs$/, 'blandfärs rå nöt 50% gris 50%'],
   [/^rödlök$/, 'lök röd'],
   [/^gul lök$/, 'lök gul'],
-  [/^kycklinglårfil[eé]\w*$/, 'kyckling lår rå u. skinn'],
-  [/^kycklingbröst\w*$/, 'kycklingfilé'],
+  [/^kycklinglårfil[eé][a-zåäö]*$/, 'kyckling lår rå u. skinn'],
+  [/^kycklingbröst[a-zåäö]*$/, 'kycklingfilé'],
   [/^(jasminris|basmatiris|långkornigt ris)$/, 'ris jasmin okokt'],
   [/^ris$/, 'ris jasmin okokt'],
   [/^(mjöl|vetemjöl)$/, 'vetemjöl'],
@@ -147,6 +155,7 @@ export function parseIngredient(raw: string): ParsedIngredient {
     .replace(/\(.*?\)/g, ' ')
     .split(/,| till | att | eller | à /)[0]
     .replace(PREP_WORDS, ' ')
+    .replace(/\bbaby(?=[a-zåäö]{3})/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   if (unit && /^(klyfta|klyftor)$/.test(unit) && name === 'vitlök') name = 'vitlök';
@@ -181,20 +190,41 @@ function singularVariants(name: string): string[] {
 
 const CONFIDENCE_THRESHOLDS: [number, 'high' | 'medium' | 'low'][] = [[1.0, 'high'], [0.75, 'medium'], [0.5, 'low']];
 
-async function bestMatch(db: SupabaseClient, name: string) {
-  let query = name;
+function applySynonyms(name: string): string {
   for (const [re, replacement] of SYNONYMS) {
-    if (re.test(name)) {
-      query = replacement;
-      break;
-    }
+    if (re.test(name)) return replacement;
   }
+  return name;
+}
+
+async function topHit(db: SupabaseClient, query: string) {
+  const { data } = await db.rpc('match_food', { p_query: query, p_limit: 1 });
+  return (data?.[0] as { food_id: string; name: string; score: number } | undefined) ?? null;
+}
+
+async function bestMatch(db: SupabaseClient, name: string) {
+  const query = applySynonyms(name);
   let best: { food_id: string; name: string; score: number } | null = null;
   for (const candidate of [query, ...singularVariants(query)]) {
-    const { data } = await db.rpc('match_food', { p_query: candidate, p_limit: 1 });
-    const hit = data?.[0];
+    const hit = await topHit(db, candidate);
     if (hit && (!best || hit.score > best.score)) best = hit;
-    if (best && best.score >= 1.0) break;
+    if (best && best.score >= 1.0) return best;
+  }
+
+  // Swedish compounds: fall back to the tail of the word ("pecorinoost" → "ost",
+  // "kycklinglårfilé" → "lårfilé"), scored a little lower than a direct hit.
+  if (!best || best.score < 0.75) {
+    const words = name.split(' ');
+    const last = words[words.length - 1];
+    for (let i = 3; i <= last.length - 3; i++) {
+      const tail = applySynonyms(last.slice(i));
+      const hit = await topHit(db, tail);
+      if (hit && hit.score >= 1.0) {
+        const scored = { ...hit, score: hit.score - 0.15 };
+        if (!best || scored.score > best.score) best = scored;
+        break;
+      }
+    }
   }
   return best;
 }

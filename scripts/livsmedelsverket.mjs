@@ -149,7 +149,7 @@ const CATEGORY_BY_GROUP = {
 
 // Zero-point foods are deliberately conservative: plain fruit, vegetables, legumes, fish, eggs,
 // lean poultry and plain low-fat yoghurt — never anything fried, sweetened, in oil or processed.
-const NOT_ZERO = /stekt|friterad|panerad|olja|socker|sockrad|sirap|sylt|torkad(?! kokt)|chips|juice|smoothie|barnmat|inlagd|marinerad|stuvad|gratäng|sås|burgare|m\. skinn|frysvara m\.|avokado|oliv/i;
+const NOT_ZERO = /stekt|friterad|panerad|olja|socker|sockrad|sirap|sylt|torkad(?! kokt)|chips|juice|smoothie|barnmat|inlagd|marinerad|stuvad|gratäng|sås|burgare|m\. skinn|frysvara m\.|avokado|oliv|äggula/i;
 
 function categorize(food) {
   const name = food.name.toLowerCase();
