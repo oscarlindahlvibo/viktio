@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { callFunction } from '@/lib/api';
+import { toLocalDate } from '@/lib/dates';
 
 export const PRIVACY_POLICY_VERSION = '2026-10-29';
 
@@ -35,7 +36,7 @@ export async function exportMyData(userId: string, email?: string) {
   data.my_recipes = recipes;
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const file = new File([blob], `viktio-data-${new Date().toISOString().slice(0, 10)}.json`, { type: 'application/json' });
+  const file = new File([blob], `viktio-data-${toLocalDate()}.json`, { type: 'application/json' });
   // The native apps' web views can't download blobs, so hand the file to the share sheet there.
   if (navigator.canShare?.({ files: [file] })) {
     await navigator.share({ files: [file], title: 'Min Viktio-data' });

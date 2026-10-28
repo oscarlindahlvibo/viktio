@@ -1,6 +1,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toLocalDate } from '@/lib/dates';
 
 interface DateSelectorProps {
   date: string;
@@ -10,20 +11,20 @@ interface DateSelectorProps {
 const WEEKDAYS = ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'];
 
 export function DateSelector({ date, onChange }: DateSelectorProps) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDate();
   const selectedDate = new Date(date + 'T00:00:00');
 
   const goPrev = () => {
     const d = new Date(date + 'T00:00:00');
     d.setDate(d.getDate() - 1);
-    onChange(d.toISOString().slice(0, 10));
+    onChange(toLocalDate(d));
   };
 
   const goNext = () => {
     if (date >= today) return;
     const d = new Date(date + 'T00:00:00');
     d.setDate(d.getDate() + 1);
-    onChange(d.toISOString().slice(0, 10));
+    onChange(toLocalDate(d));
   };
 
   const formatted = selectedDate.toLocaleDateString('sv-SE', {

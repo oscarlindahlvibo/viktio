@@ -13,16 +13,17 @@ import { LifestyleCard } from '@/components/lifestyle-card';
 import { Loader2, Dumbbell, Flame, Settings } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { toast } from 'sonner';
+import { toLocalDate } from '@/lib/dates';
 
 function mondayOf(date: string): string {
   const d = new Date(`${date}T12:00:00`);
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return d.toISOString().slice(0, 10);
+  return toLocalDate(d);
 }
 
 export default function DashboardPage() {
   const { profile } = useAuth();
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => toLocalDate());
   const { logEntries, activityEntries, goal, loading, reload } = useDailyData(date);
   usePointEngineConfig();
 

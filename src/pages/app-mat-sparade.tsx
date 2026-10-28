@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Link } from '@/lib/navigation';
+import { toLocalDate } from '@/lib/dates';
 
 const MEAL_OPTIONS = [
   { value: 'breakfast', label: 'Frukost' },
@@ -92,7 +93,7 @@ export default function SavedMealsPage() {
       return;
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDate();
     const targetMealType = mealType || meal.meal_type || 'snack';
 
     // Add all items to food log

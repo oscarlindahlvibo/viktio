@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { ACTIVITIES, activityPoints, estimateKcal, metFor, type Intensity } from '@/lib/activity';
 import { formatPoints } from '@/lib/points';
 import type { ActivityLogEntry } from '@/lib/types';
+import { toLocalDate } from '@/lib/dates';
 
 const INTENSITY_OPTIONS = [
   { value: 'low', label: 'Låg' },
@@ -26,7 +27,7 @@ export function ActivityTab() {
   const [distance, setDistance] = useState('');
   const [intensity, setIntensity] = useState<Intensity>('moderate');
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDate();
 
   const loadActivities = async () => {
     if (!user) return;

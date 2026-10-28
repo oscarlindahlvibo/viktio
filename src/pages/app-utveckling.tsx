@@ -13,6 +13,7 @@ import {
   BarChart, Bar,
 } from 'recharts';
 import { calculateBMI, bmiCategory } from '@/lib/health';
+import { toLocalDate } from '@/lib/dates';
 
 export default function DevelopmentPage() {
   const { user, profile, refreshProfile } = useAuth();
@@ -111,7 +112,7 @@ export default function DevelopmentPage() {
   const weeklyReport = useMemo(() => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const startDate = sevenDaysAgo.toISOString().slice(0, 10);
+    const startDate = toLocalDate(sevenDaysAgo);
     return {
       startDate,
       weightChange: weightEntries.length >= 2
@@ -360,7 +361,7 @@ function WeeklyReport({ userId, goal, weeklyWeightChange }: { userId: string; go
     (async () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const startDate = sevenDaysAgo.toISOString().slice(0, 10);
+      const startDate = toLocalDate(sevenDaysAgo);
 
       const { data: logs } = await supabase
         .from('food_log')
@@ -382,7 +383,7 @@ function WeeklyReport({ userId, goal, weeklyWeightChange }: { userId: string; go
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
+        const key = toLocalDate(d);
         const label = d.toLocaleDateString('sv-SE', { weekday: 'short' });
         dayLabels.push(label);
         byDay[key] = { points: 0, protein: 0 };

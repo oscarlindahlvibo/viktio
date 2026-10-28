@@ -8,6 +8,7 @@ import type { FoodSearchResult, MealType } from '@/lib/types';
 import { X, Minus, Plus, Check, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { toLocalDate } from '@/lib/dates';
 
 interface FoodAddSheetProps {
   food: FoodSearchResult;
@@ -37,7 +38,7 @@ export function FoodAddSheet({ food, mealType, onClose, onAdded }: FoodAddSheetP
   const [amount, setAmount] = useState(100);
   const [selectedMeal, setSelectedMeal] = useState<MealType>(mealType as MealType);
   const [saving, setSaving] = useState(false);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => toLocalDate());
 
   // Fetch full nutrition for this food
   const [nutrition, setNutrition] = useState<{

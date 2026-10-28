@@ -13,8 +13,9 @@ import { useDailyData, calculateMealTotals } from '@/hooks/use-daily-data';
 import { earnedActivityPoints } from '@/lib/activity';
 import { GLASS_ML, HABIT_SUGGESTIONS, lifeScore, MOOD_EMOJI, STRESS_LABELS, waterGoalMl } from '@/lib/lifestyle';
 import { ScoreRing } from '@/components/lifestyle-card';
+import { toLocalDate } from '@/lib/dates';
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => toLocalDate();
 
 export default function LifestylePage() {
   const router = useRouter();

@@ -11,6 +11,7 @@ import { formatPoints } from '@/lib/points';
 import { estimatedOneRepMax, programByKey, sessionMet, suggestWeight, type ProgramExercise } from '@/lib/training';
 import { ExerciseDetail, ExerciseLibrary, useExercises } from '@/components/training/exercise-library';
 import type { Exercise, TrainingSet } from '@/lib/types';
+import { toLocalDate } from '@/lib/dates';
 
 interface SetRow {
   reps: string;
@@ -172,7 +173,7 @@ export default function TrainingSessionPage() {
 
       const { data: activity } = await supabase
         .from('activity_log')
-        .insert({ user_id: user.id, activity: name, duration_min: minutes, intensity: 'moderate', estimated_kcal: kcal, bonus_points: points, source: 'training', logged_at: new Date().toISOString().slice(0, 10) })
+        .insert({ user_id: user.id, activity: name, duration_min: minutes, intensity: 'moderate', estimated_kcal: kcal, bonus_points: points, source: 'training', logged_at: toLocalDate() })
         .select('id')
         .single();
 

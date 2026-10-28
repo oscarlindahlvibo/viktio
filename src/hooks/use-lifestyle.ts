@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/auth-provider';
 import { streak } from '@/lib/lifestyle';
 import type { DailyCheckin, Habit } from '@/lib/types';
+import { toLocalDate } from '@/lib/dates';
 
 export function useLifestyle(date: string) {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ export function useLifestyle(date: string) {
     const [c, h, l] = await Promise.all([
       supabase.from('daily_checkins').select('*').eq('user_id', user.id).eq('date', date).maybeSingle(),
       supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true).order('created_at'),
-      supabase.from('habit_logs').select('habit_id, date').eq('user_id', user.id).gte('date', since.toISOString().slice(0, 10)),
+      supabase.from('habit_logs').select('habit_id, date').eq('user_id', user.id).gte('date', toLocalDate(since)),
     ]);
     setCheckin((c.data as DailyCheckin) ?? {});
     setHabits((h.data as Habit[]) ?? []);

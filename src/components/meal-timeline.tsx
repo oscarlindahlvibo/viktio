@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { toLocalDate } from '@/lib/dates';
 
 interface MealTimelineProps {
   meals: Record<string, FoodLogEntry[]>;
@@ -100,7 +101,7 @@ export function MealTimeline({ meals, onDelete, date, onUpdated }: MealTimelineP
         const entries = meals[mealType] || [];
         const mealPoints = entries.reduce((sum, e) => sum + e.points, 0);
         const Icon = MEAL_ICONS[mealType];
-        const isToday = date === new Date().toISOString().slice(0, 10);
+        const isToday = date === toLocalDate();
 
         return (
           <div key={mealType} className="rounded-2xl bg-card border border-border overflow-hidden">

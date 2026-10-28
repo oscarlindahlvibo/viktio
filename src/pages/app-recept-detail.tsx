@@ -9,6 +9,7 @@ import { ChevronLeft, Clock, Users, Flame, AlertTriangle, ExternalLink, Plus, Mi
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { toLocalDate } from '@/lib/dates';
 
 export default function RecipeDetailPage() {
   const params = useParams();
@@ -60,7 +61,7 @@ export default function RecipeDetailPage() {
   const handleAddToDiary = async () => {
     if (!user) return;
     setAdding(true);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDate();
     const { data: engineVersion } = await supabase
       .from('point_engine_versions')
       .select('id')

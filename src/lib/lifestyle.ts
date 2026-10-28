@@ -1,3 +1,5 @@
+import { toLocalDate } from './dates';
+
 // Lifestyle tracking: water goal, habit streaks and the daily life score.
 
 export const GLASS_ML = 250;
@@ -25,7 +27,7 @@ const toDate = (d: string) => new Date(`${d}T12:00:00`);
 const addDays = (d: string, n: number) => {
   const x = toDate(d);
   x.setDate(x.getDate() + n);
-  return x.toISOString().slice(0, 10);
+  return toLocalDate(x);
 };
 
 // Consecutive days up to today; an unchecked today doesn't break a streak that ran until yesterday.
