@@ -14,6 +14,32 @@ cp .env.example .env   # fyll i VITE_SUPABASE_URL och VITE_SUPABASE_ANON_KEY
 npm run dev            # http://localhost:5173
 ```
 
+## Funktioner
+
+- **Poäng:** personlig dagsbudget utifrån kaloribehov (`src/lib/health.ts`), veckopool måndag–söndag, poäng per livsmedel enligt `src/lib/points.ts`.
+- **Aktivitetspoäng:** träning räknas om till kcal med MET × vikt × tid och ger halva matens poängtakt, max 12 poäng per dag (`src/lib/activity.ts`).
+- **Apple Hälsa / Health Connect:** steg och vikt synkas vid appstart; steg över 6 000 per dag ger poäng (`src/lib/health-sync.ts`).
+- **Träning:** program, pass med set/reps/vikt, vilotimer, viktförslag och personliga rekord (`src/lib/training.ts`).
+- **Livsstil:** vatten, sömn, humör, stress, steg, vanor med streaks, kroppsmått och en livsstilspoäng 0–100 (`src/lib/lifestyle.ts`).
+- **Påminnelser:** lokala notiser i apparna, inga push-nycklar behövs (`src/lib/reminders.ts`).
+- **Integritet:** samtycke vid registrering, dataexport och radering av konto (`src/lib/privacy.ts`, funktionen `delete-account`).
+
+## Tester
+
+```bash
+npm test
+```
+
+## Lokal utveckling med egen databas
+
+Med Docker igång startar en lokal Supabase med alla migreringar:
+
+```bash
+npx supabase start
+```
+
+Peka sedan appen mot den med en `.env.development.local` (`VITE_SUPABASE_URL=http://127.0.0.1:54321` och anon-nyckeln som `supabase status` visar).
+
 ## Supabase
 
 Databasschema och seed-data finns i `supabase/migrations`. API:t ligger som Edge Functions i `supabase/functions`:
@@ -82,3 +108,7 @@ npm run android   # bygger webben, synkar och öppnar Android Studio
 ```
 
 Efter ändringar i webbkoden räcker `npm run cap:sync`. App-id: `se.vibogruppen.viktio`.
+
+**Apple Hälsa:** HealthKit-rättigheten finns i `ios/App/App/App.entitlements`. Första gången du bygger till en riktig iPhone behöver du välja ditt team under *Signing & Capabilities* i Xcode, så att HealthKit läggs till i provisioneringsprofilen.
+
+**Health Connect** kräver Android 8 eller senare (minSdk 26). På Android 13 och äldre måste användaren installera appen Health Connect från Play Butik.
