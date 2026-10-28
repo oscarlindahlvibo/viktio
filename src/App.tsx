@@ -10,6 +10,7 @@ const Login = lazy(() => import('@/pages/login'));
 const Register = lazy(() => import('@/pages/register'));
 const Onboarding = lazy(() => import('@/pages/onboarding'));
 const Admin = lazy(() => import('@/pages/admin'));
+const Integritet = lazy(() => import('@/pages/integritet'));
 const Dashboard = lazy(() => import('@/pages/app'));
 const Mat = lazy(() => import('@/pages/app-mat'));
 const MatSok = lazy(() => import('@/pages/app-mat-sok'));
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/integritet" element={<Integritet />} />
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="mat" element={<Mat />} />

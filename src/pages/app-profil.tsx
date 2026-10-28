@@ -15,6 +15,7 @@ import { computeGoals, saveGoals } from '@/lib/goals';
 import type { Sex, ActivityLevel, WeightLossPace } from '@/lib/types';
 import { ChevronLeft, Loader2, User, Target, Activity, Leaf } from 'lucide-react';
 import { toast } from 'sonner';
+import { AccountSettings } from '@/components/account-settings';
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
   { value: 'sedentary', label: 'Stillasittande' },
@@ -310,9 +311,11 @@ export default function ProfilePage() {
         {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Spara ändringar'}
       </Button>
 
-      <p className="text-xs text-muted-foreground text-center mt-4">
+      <p className="text-xs text-muted-foreground text-center mt-4 mb-6">
         Ändringar räknar om dina poäng och mål automatiskt.
       </p>
+
+      <AccountSettings />
     </div>
   );
 }

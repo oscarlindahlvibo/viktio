@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Leaf, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PRIVACY_POLICY_VERSION } from '@/lib/privacy';
 import { Link } from '@/lib/navigation';
 
 export default function RegisterPage() {
@@ -18,6 +19,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState(isDemo ? 'demo@viktio.se' : '');
   const [password, setPassword] = useState(isDemo ? 'viktio123' : '');
   const [loading, setLoading] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +36,8 @@ export default function RegisterPage() {
       await supabase.from('profiles').upsert({
         id: data.user.id,
         onboarding_completed: false,
+        health_data_consent_at: new Date().toISOString(),
+        privacy_policy_version: PRIVACY_POLICY_VERSION,
       });
       toast.success('Konto skapat! Välkommen till Viktio.');
       router.replace('/onboarding');
@@ -91,9 +95,22 @@ export default function RegisterPage() {
               className="h-12 rounded-xl"
             />
           </div>
+          <label className="flex items-start gap-3 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]"
+              required
+            />
+            <span>
+              Jag samtycker till att Viktio behandlar mina hälsouppgifter (t.ex. vikt, mat och träning) enligt{' '}
+              <Link href="/integritet" className="text-primary font-medium">integritetspolicyn</Link>.
+            </span>
+          </label>
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || !consent}
             className="h-12 rounded-xl text-base font-semibold w-full"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Skapa konto'}
