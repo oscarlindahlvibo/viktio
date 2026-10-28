@@ -34,6 +34,12 @@ Viktio kör en egen självhostad Supabase-stack på `vibo-server` i `~/viktio/su
 
 Hemligheter ligger i `~/viktio/supabase/.env` på servern. Nginx-konfigurationen finns i `~/viktio/nginx/`.
 
+Webbappen körs på `https://viktio.vibogruppen.se` från containern `viktio-web` (`~/viktio/web`, port 25180). Driftsätt en ny version:
+
+```bash
+npm run build && rsync -a --delete dist/ vibo-server:viktio/web/dist/
+```
+
 Uppdatera Edge Functions:
 
 ```bash
