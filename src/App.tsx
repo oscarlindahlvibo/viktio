@@ -21,7 +21,9 @@ const Profil = lazy(() => import('@/pages/app-profil'));
 const Recept = lazy(() => import('@/pages/app-recept'));
 const ReceptDetail = lazy(() => import('@/pages/app-recept-detail'));
 const Traning = lazy(() => import('@/pages/app-traning'));
+const TraningPass = lazy(() => import('@/pages/app-traning-pass'));
 const Utveckling = lazy(() => import('@/pages/app-utveckling'));
+const Livsstil = lazy(() => import('@/pages/app-livsstil'));
 
 function PageLoader() {
   return (
@@ -54,7 +56,9 @@ export default function App() {
               <Route path="recept" element={<Recept />} />
               <Route path="recept/:id" element={<ReceptDetail />} />
               <Route path="traning" element={<Traning />} />
+              <Route path="traning/pass" element={<TraningPass />} />
               <Route path="utveckling" element={<Utveckling />} />
+              <Route path="livsstil" element={<Livsstil />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

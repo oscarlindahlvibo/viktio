@@ -219,11 +219,62 @@ export interface FoodCategory {
 
 export interface Exercise {
   id: string;
+  slug: string | null;
   name: string;
   category: string;
   muscle_group: string | null;
   equipment: string | null;
   description: string | null;
+  instructions: string[];
+  level: 'beginner' | 'intermediate' | 'advanced' | null;
+  location: 'home' | 'gym' | 'both' | 'outdoors' | null;
+  met: number | null;
+}
+
+export interface TrainingSession {
+  id: string;
+  user_id: string;
+  name: string;
+  program_key: string | null;
+  program_day: number | null;
+  started_at: string;
+  finished_at: string | null;
+  duration_min: number | null;
+  activity_log_id: string | null;
+}
+
+export interface TrainingSet {
+  id: string;
+  session_id: string;
+  exercise_slug: string;
+  exercise_name: string;
+  set_number: number;
+  reps: number | null;
+  weight_kg: number | null;
+  duration_sec: number | null;
+  completed: boolean;
+  created_at: string;
+}
+
+export interface DailyCheckin {
+  id: string;
+  user_id: string;
+  date: string;
+  water_ml: number;
+  sleep_hours: number | null;
+  sleep_quality: number | null;
+  mood: number | null;
+  stress: number | null;
+  steps: number | null;
+  note: string | null;
+}
+
+export interface Habit {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string | null;
+  active: boolean;
 }
 
 export interface WorkoutSession {

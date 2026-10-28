@@ -9,6 +9,7 @@ import { DateSelector } from '@/components/date-selector';
 import { supabase } from '@/lib/supabase/client';
 import { formatPoints } from '@/lib/points';
 import { earnedActivityPoints } from '@/lib/activity';
+import { LifestyleCard } from '@/components/lifestyle-card';
 import { Loader2, Dumbbell, Flame, Settings } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { toast } from 'sonner';
@@ -163,6 +164,14 @@ export default function DashboardPage() {
           <Flame className="h-5 w-5 text-primary/50" />
         </div>
       )}
+
+      <LifestyleCard
+        date={date}
+        pointsUsed={usedPoints}
+        pointsBudget={dailyBudget}
+        foodLogged={logEntries.length > 0}
+        activeMinutes={activityEntries.reduce((sum, a) => sum + a.duration_min, 0)}
+      />
 
       {/* Quick Actions */}
       <QuickActions />

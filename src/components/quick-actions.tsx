@@ -1,13 +1,13 @@
 
 import { Link } from '@/lib/navigation';
-import { Plus, ScanLine, BookOpen, Dumbbell, Scale } from 'lucide-react';
+import { Plus, ScanLine, BookOpen, Dumbbell, HeartPulse } from 'lucide-react';
 
 const ACTIONS = [
   { label: 'Lägg till mat', href: '/app/mat/sok', icon: Plus, color: 'bg-primary', dynamicMeal: true },
   { label: 'Skanna vara', href: '/app/mat/skanna', icon: ScanLine, color: 'bg-chart-2', dynamicMeal: true },
   { label: 'Lägg till måltid', href: '/app/mat/sparade', icon: BookOpen, color: 'bg-chart-3' },
   { label: 'Träning', href: '/app/traning', icon: Dumbbell, color: 'bg-chart-4' },
-  { label: 'Vikt', href: '/app/utveckling', icon: Scale, color: 'bg-chart-5' },
+  { label: 'Livsstil', href: '/app/livsstil', icon: HeartPulse, color: 'bg-chart-5' },
 ];
 
 function getCurrentMeal(): string {
