@@ -60,6 +60,14 @@ Nollpoängsvaror sätts konservativt i skriptet (`categorize`): ren frukt, grön
 
 Importerade recept får sina ingredienser tolkade ("2 dl havregryn" → 70 g) och matchade mot livsmedel i `supabase/functions/_shared/ingredients.ts`, med fuzzy-sökning i databasfunktionen `match_food`. Poängen räknas av `food_points_100g`, som följer samma formel som `src/lib/points.ts`.
 
+### Admin
+
+Adminsidan (`/admin`) och ändringar av delad data (poängmotor, inställningar, livsmedel och recept som inte är ens egna) kräver att kontot finns i tabellen `app_admins`. Ge ett konto admin:
+
+```bash
+ssh vibo-server "docker exec supabase-viktio-db psql -U postgres -d postgres -c \"insert into app_admins (user_id) select id from auth.users where email = 'namn@example.se'\""
+```
+
 Kör en ny migrering:
 
 ```bash

@@ -194,7 +194,12 @@ async function importRecipeFromUrl(url: string, authHeader: string) {
   else if (sourceName.includes('coop')) sourceName = 'Coop';
   else if (sourceName.includes('citygross')) sourceName = 'City Gross';
 
-  const { data: source } = await supabase
+  // Recipe sources and matching are shared data written with the service role.
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: source } = await admin
     .from('recipe_sources')
     .select('id')
     .ilike('slug', sourceName.toLowerCase().replace(/\s+/g, '_'))
@@ -202,7 +207,7 @@ async function importRecipeFromUrl(url: string, authHeader: string) {
 
   let sourceId = source?.id;
   if (!sourceId) {
-    const { data: newSource } = await supabase
+    const { data: newSource } = await admin
       .from('recipe_sources')
       .insert({
         name: sourceName,
@@ -245,10 +250,6 @@ async function importRecipeFromUrl(url: string, authHeader: string) {
     ingredients.map((ing) => ({ recipe_id: recipe.id, raw_text: ing, confidence: 'unmatched' })),
   );
 
-  // Matching writes nutrition and totals through service-role-only functions.
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
   await matchRecipe(admin, recipe.id);
 
   return json({ id: recipe.id, name });

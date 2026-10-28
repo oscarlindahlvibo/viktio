@@ -11,8 +11,14 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [tab, setTab] = useState<'foods' | 'engine' | 'providers' | 'settings'>('foods');
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
-  if (loading) {
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc('is_admin').then(({ data }) => setIsAdmin(data === true));
+  }, [user]);
+
+  if (loading || (user && isAdmin === null)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -23,6 +29,18 @@ export default function AdminPage() {
   if (!user) {
     router.replace('/login');
     return null;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4 text-center">
+        <Shield className="h-8 w-8 text-muted-foreground" />
+        <p className="font-medium">Du har inte behörighet till adminsidan.</p>
+        <button onClick={() => router.replace('/app')} className="text-sm text-primary">
+          Tillbaka till appen
+        </button>
+      </div>
+    );
   }
 
   return (
