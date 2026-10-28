@@ -23,13 +23,27 @@ Databasschema och seed-data finns i `supabase/migrations`. API:t ligger som Edge
 | `food-search`   | Söker livsmedel i Open Food Facts på namn (`q`) eller streckkod (`barcode`) |
 | `import-recipe` | Söker recept på Köket.se (`query`) eller importerar ett recept från en URL (`url`) |
 
-Driftsätt mot ditt projekt:
+### Egen server (vibo-server)
+
+Viktio kör en egen självhostad Supabase-stack på `vibo-server` i `~/viktio/supabase` (Docker Compose-projekt `supabase-viktio`). Publik adress: `https://supabase.viktio.vibogruppen.se`.
+
+| Del          | Port (endast 127.0.0.1) |
+| ------------ | ----------------------- |
+| API-gateway  | 38000                   |
+| Postgres     | 35432 (session), 36543 (transaction) |
+
+Hemligheter ligger i `~/viktio/supabase/.env` på servern. Nginx-konfigurationen finns i `~/viktio/nginx/`.
+
+Uppdatera Edge Functions:
 
 ```bash
-npx supabase link --project-ref <ditt-projekt>
-npx supabase db push
-npx supabase functions deploy food-search
-npx supabase functions deploy import-recipe
+tar cf - -C supabase/functions _shared food-search import-recipe | ssh vibo-server 'cd ~/viktio/supabase/volumes/functions && tar xf - && docker restart supabase-viktio-edge-functions'
+```
+
+Kör en ny migrering:
+
+```bash
+ssh vibo-server 'docker exec -i supabase-viktio-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 --single-transaction' < supabase/migrations/<fil>.sql
 ```
 
 ## Mobilappar
