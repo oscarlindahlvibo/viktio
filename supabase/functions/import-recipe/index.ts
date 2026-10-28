@@ -29,9 +29,9 @@ async function searchRecipeByName(query: string) {
   return json({ searchResults: results });
 }
 
-async function searchRecipesOnline(query: string) {
-  const allResults: { name: string; url: string; source: string; image?: string; cooking_time?: string }[] = [];
+type RecipeHit = { name: string; url: string; source: string; image?: string; cooking_time?: string };
 
+async function searchKoket(query: string): Promise<RecipeHit[]> {
   try {
     const response = await fetch(
       `https://koket.se/api/search?query=${encodeURIComponent(query)}`,
@@ -41,34 +41,56 @@ async function searchRecipesOnline(query: string) {
         redirect: 'follow',
       },
     );
+    if (!response.ok) return [];
 
-    if (response.ok) {
-      const data = await response.json();
-      const items: Array<{
-        name?: string;
-        url?: string;
-        type?: string;
-        image?: { url?: string };
-        cooking_time?: string;
-      }> = data.items || [];
+    const data = await response.json();
+    const items: Array<{
+      name?: string;
+      url?: string;
+      image?: { url?: string };
+      cooking_time?: string;
+    }> = data.items || [];
 
-      for (const item of items) {
-        if (item.name && item.url) {
-          allResults.push({
-            name: item.name,
-            url: `https://koket.se${item.url}`,
-            source: 'Köket.se',
-            image: item.image?.url ? `https://koket.se/images/${item.image.url}` : undefined,
-            cooking_time: item.cooking_time,
-          });
-        }
+    return items
+      .filter((item) => item.name && item.url)
+      .map((item) => ({
+        name: item.name!,
+        url: `https://koket.se${item.url}`,
+        source: 'Köket.se',
+        image: item.image?.url ? `https://koket.se/images/${item.image.url}` : undefined,
+        cooking_time: item.cooking_time,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+// Köket's search often returns nothing for multi-word queries ("pasta carbonara"), so when the
+// full query gives few hits we also search each word and rank by how many words a name contains.
+async function searchRecipesOnline(query: string) {
+  const words = query.toLowerCase().split(/\s+/).filter((w) => w.length >= 3);
+  let hits = await searchKoket(query);
+
+  if (hits.length < 5 && words.length > 1) {
+    const perWord = await Promise.all(words.map(searchKoket));
+    const seen = new Set(hits.map((h) => h.url));
+    for (const hit of perWord.flat()) {
+      if (!seen.has(hit.url)) {
+        seen.add(hit.url);
+        hits.push(hit);
       }
     }
-  } catch {
-    // API failed
   }
 
-  return allResults.slice(0, 20);
+  // Match on word stems so "carbonara" also matches "carbonarasås".
+  const stems = words.map((w) => w.slice(0, Math.max(4, w.length - 2)));
+  const relevance = (name: string) => stems.filter((s) => name.toLowerCase().includes(s)).length;
+  hits = hits
+    .map((hit, i) => ({ hit, i, score: relevance(hit.name) }))
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map(({ hit }) => hit);
+
+  return hits.slice(0, 20);
 }
 
 async function importRecipeFromUrl(url: string, authHeader: string) {
