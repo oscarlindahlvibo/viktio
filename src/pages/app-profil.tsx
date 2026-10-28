@@ -16,6 +16,7 @@ import type { Sex, ActivityLevel, WeightLossPace } from '@/lib/types';
 import { ChevronLeft, Loader2, User, Target, Activity, Leaf } from 'lucide-react';
 import { toast } from 'sonner';
 import { AccountSettings } from '@/components/account-settings';
+import { ReminderSettings } from '@/components/reminder-settings';
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
   { value: 'sedentary', label: 'Stillasittande' },
@@ -315,6 +316,7 @@ export default function ProfilePage() {
         Ändringar räknar om dina poäng och mål automatiskt.
       </p>
 
+      <ReminderSettings />
       <AccountSettings />
     </div>
   );
