@@ -17,12 +17,29 @@
             android:launchMode="singleTask"
             android:exported="true">
 
+            <!-- Health Connect shows Viktio's privacy information from here (Android 13). -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
         </activity>
+
+        <!-- Health Connect permission usage screen (Android 14+). -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -34,6 +51,10 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
     </application>
+
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
 
     <!-- Permissions -->
 

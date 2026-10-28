@@ -17,6 +17,7 @@ import { ChevronLeft, Loader2, User, Target, Activity, Leaf } from 'lucide-react
 import { toast } from 'sonner';
 import { AccountSettings } from '@/components/account-settings';
 import { ReminderSettings } from '@/components/reminder-settings';
+import { HealthSettings } from '@/components/health-settings';
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
   { value: 'sedentary', label: 'Stillasittande' },
@@ -316,6 +317,7 @@ export default function ProfilePage() {
         Ändringar räknar om dina poäng och mål automatiskt.
       </p>
 
+      <HealthSettings />
       <ReminderSettings />
       <AccountSettings />
     </div>

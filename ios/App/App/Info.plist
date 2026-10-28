@@ -49,5 +49,9 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Viktio använder kameran för att skanna streckkoder på livsmedel.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Viktio läser steg och vikt från Hälsa för att ge dig aktivitetspoäng och följa din utveckling.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Viktio sparar bara data i Hälsa när du själv ber om det.</string>
 </dict>
 </plist>

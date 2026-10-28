@@ -1,5 +1,6 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { syncHealth } from '@/lib/health-sync';
 import { useRouter, usePathname } from '@/lib/navigation';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Loader2 } from 'lucide-react';
@@ -11,6 +12,14 @@ export default function AppLayout() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, profile, loading } = useAuth();
+
+  // Pull steps and weight from Apple Health / Health Connect once per app start.
+  const synced = useRef(false);
+  useEffect(() => {
+    if (!user || !profile || synced.current) return;
+    synced.current = true;
+    syncHealth(user.id, profile.current_weight_kg ?? 75).catch(() => undefined);
+  }, [user, profile]);
 
   useEffect(() => {
     if (loading) return;
