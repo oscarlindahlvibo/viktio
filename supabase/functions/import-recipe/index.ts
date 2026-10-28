@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json, readParams } from '../_shared/http.ts';
+import { matchRecipe } from '../_shared/ingredients.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -240,13 +241,15 @@ async function importRecipeFromUrl(url: string, authHeader: string) {
     );
   }
 
-  for (const ing of ingredients) {
-    await supabase.from('recipe_ingredients').insert({
-      recipe_id: recipe.id,
-      raw_text: ing,
-      confidence: 'unmatched',
-    });
-  }
+  await supabase.from('recipe_ingredients').insert(
+    ingredients.map((ing) => ({ recipe_id: recipe.id, raw_text: ing, confidence: 'unmatched' })),
+  );
+
+  // Matching writes nutrition and totals through service-role-only functions.
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  await matchRecipe(admin, recipe.id);
 
   return json({ id: recipe.id, name });
 }

@@ -21,7 +21,8 @@ Databasschema och seed-data finns i `supabase/migrations`. API:t ligger som Edge
 | Funktion        | Vad den gör                                                          |
 | --------------- | -------------------------------------------------------------------- |
 | `food-search`   | Söker livsmedel i Open Food Facts på namn (`q`) eller streckkod (`barcode`) |
-| `import-recipe` | Söker recept på Köket.se (`query`) eller importerar ett recept från en URL (`url`) |
+| `import-recipe` | Söker recept på Köket.se (`query`) eller importerar ett recept från en URL (`url`) och matchar ingredienserna |
+| `match-recipes` | Matchar om ingredienser mot livsmedel (`recipe_id` eller `all`, valfritt `rematch`). Kräver service role-nyckeln |
 
 ### Egen server (vibo-server)
 
@@ -45,6 +46,19 @@ Uppdatera Edge Functions:
 ```bash
 tar cf - -C supabase/functions _shared food-search import-recipe | ssh vibo-server 'cd ~/viktio/supabase/volumes/functions && tar xf - && docker restart supabase-viktio-edge-functions'
 ```
+
+### Livsmedel och receptpoäng
+
+Livsmedelsverkets livsmedelsdatabas (~2 600 livsmedel) importeras med `scripts/livsmedelsverket.mjs`. Importen är en upsert och kan köras om när Livsmedelsverket uppdaterar sina data:
+
+```bash
+node scripts/livsmedelsverket.mjs fetch lmv.json
+node scripts/livsmedelsverket.mjs sql lmv.json | ssh vibo-server 'docker exec -i supabase-viktio-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 --single-transaction'
+```
+
+Nollpoängsvaror sätts konservativt i skriptet (`categorize`): ren frukt, grönsaker, baljväxter, fisk, ägg, mager fågel och mager naturell yoghurt.
+
+Importerade recept får sina ingredienser tolkade ("2 dl havregryn" → 70 g) och matchade mot livsmedel i `supabase/functions/_shared/ingredients.ts`, med fuzzy-sökning i databasfunktionen `match_food`. Poängen räknas av `food_points_100g`, som följer samma formel som `src/lib/points.ts`.
 
 Kör en ny migrering:
 

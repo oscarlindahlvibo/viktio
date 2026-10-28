@@ -41,26 +41,37 @@ async function searchByBarcode(barcode: string) {
   return json({ results: result ? [result] : [] });
 }
 
+const SEARCH_FIELDS = 'code,product_name,brands,image_url,image_front_small_url,quantity,nutriments,serving_size';
+
+// Open Food Facts' search service (search-a-licious); the legacy cgi/search.pl endpoint is unreliable.
+async function searchOFF(q: string, pageSize: number): Promise<Record<string, unknown>[]> {
+  const params = new URLSearchParams({ q, page_size: String(pageSize), fields: SEARCH_FIELDS });
+  const response = await fetch(`https://search.openfoodfacts.org/search?${params}`, {
+    headers: { 'User-Agent': 'Viktio/1.0 (https://viktio.vibogruppen.se)' },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return data.hits || [];
+}
+
 async function searchByName(query: string) {
   if (query.length < 2) {
     return json({ results: [] });
   }
 
-  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=30&fields=product_name,brands,image_url,image_front_small_url,quantity,code,nutriments,serving_size,serving_quantity`;
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'Viktio/1.0 (web app)' },
-    signal: AbortSignal.timeout(8000),
-  });
-
-  if (!response.ok) {
-    return json({ results: [] });
+  // Prefer products sold in Sweden; top up with global results when there are few.
+  let products = await searchOFF(`${query} countries_tags:"en:sweden"`, 30);
+  if (products.length < 10) {
+    const seen = new Set(products.map((p) => p.code));
+    const global = await searchOFF(query, 30);
+    products = products.concat(global.filter((p) => !seen.has(p.code)));
   }
 
-  const data = await response.json();
-  const products = (data.products || []).filter((p: { product_name?: string }) => p.product_name);
-
   const results = products
-    .map((p: Record<string, unknown>) => mapOFFProduct(p, String(p.code || '')))
+    .filter((p) => p.product_name)
+    .slice(0, 30)
+    .map((p) => mapOFFProduct(p, String(p.code || '')))
     .filter(Boolean);
 
   return json({ results });
@@ -96,7 +107,7 @@ function mapOFFProduct(
 
   return {
     name,
-    brand: (p.brands as string) || null,
+    brand: (Array.isArray(p.brands) ? p.brands.map((b) => String(b).trim()).join(', ') : (p.brands as string)) || null,
     image_url: imageUrl,
     package_size: (p.quantity as string) || null,
     barcode,
@@ -107,7 +118,8 @@ function mapOFFProduct(
     saturated_fat_g: Math.round((n['saturated-fat_100g'] || 0) * 10) / 10,
     fiber_g: Math.round((n['fiber_100g'] || 0) * 10) / 10,
     sugar_g: Math.round((n['sugars_100g'] || 0) * 10) / 10,
-    sodium_mg: Math.round((n['sodium_100g'] || 0) * 10) / 10,
+    // Open Food Facts reports sodium in grams.
+    sodium_mg: Math.round((n['sodium_100g'] || 0) * 1000),
     per_amount: 100,
     serving_description: (p.serving_size as string) || null,
     source: 'openfoodfacts',
