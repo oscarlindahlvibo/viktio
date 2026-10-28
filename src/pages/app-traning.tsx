@@ -8,16 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-
-const ACTIVITIES = [
-  { name: 'Promenad', kcalPerMin: 4 },
-  { name: 'Löpning', kcalPerMin: 10 },
-  { name: 'Cykling', kcalPerMin: 7 },
-  { name: 'Simning', kcalPerMin: 8 },
-  { name: 'Styrketräning', kcalPerMin: 5 },
-  { name: 'Lagidrott', kcalPerMin: 7 },
-  { name: 'Annan aktivitet', kcalPerMin: 5 },
-];
+import { ACTIVITIES, activityPoints, estimateKcal, metFor } from '@/lib/activity';
+import { formatPoints } from '@/lib/points';
 
 const INTENSITY_OPTIONS = [
   { value: 'low', label: 'Låg' },
@@ -26,7 +18,7 @@ const INTENSITY_OPTIONS = [
 ] as const;
 
 export default function TrainingPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,9 +58,7 @@ export default function TrainingPage() {
   const handleAddActivity = async () => {
     if (!user || !duration) return;
     const dur = parseInt(duration);
-    const activityDef = ACTIVITIES.find((a) => a.name === activityName);
-    const intensityMult = intensity === 'low' ? 0.7 : intensity === 'high' ? 1.3 : 1;
-    const kcal = Math.round((activityDef?.kcalPerMin || 5) * dur * intensityMult);
+    const kcal = estimateKcal(metFor(activityName), profile?.current_weight_kg ?? 75, dur, intensity);
 
     const { error } = await supabase.from('activity_log').insert({
       user_id: user.id,
@@ -77,7 +67,7 @@ export default function TrainingPage() {
       distance_km: distance ? parseFloat(distance) : null,
       intensity,
       estimated_kcal: kcal,
-      bonus_points: 0,
+      bonus_points: activityPoints(kcal),
       source: 'manual',
       logged_at: today,
     });
@@ -85,7 +75,7 @@ export default function TrainingPage() {
     if (error) {
       toast.error('Kunde inte lägga till');
     } else {
-      toast.success(`${activityName} tillagd!`);
+      toast.success(`${activityName} tillagd! +${formatPoints(activityPoints(kcal))} points`);
       setShowAdd(false);
       setDuration('30');
       setDistance('');
@@ -172,6 +162,7 @@ export default function TrainingPage() {
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{a.duration_min} min</span>
                       <span className="flex items-center gap-1"><Flame className="h-3 w-3" />{Math.round(a.estimated_kcal)} kcal</span>
                       {a.distance_km && <span>• {a.distance_km} km</span>}
+                      {a.bonus_points > 0 && <span className="text-primary font-medium">+{formatPoints(a.bonus_points)} p</span>}
                     </p>
                   </div>
                   <button

@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useDailyData, usePointEngineConfig, calculateMealTotals, groupByMeal, MEAL_LABELS } from '@/hooks/use-daily-data';
 import { PointsRing } from '@/components/points-ring';
@@ -8,9 +8,16 @@ import { MealTimeline } from '@/components/meal-timeline';
 import { DateSelector } from '@/components/date-selector';
 import { supabase } from '@/lib/supabase/client';
 import { formatPoints } from '@/lib/points';
+import { earnedActivityPoints } from '@/lib/activity';
 import { Loader2, Dumbbell, Flame, Settings } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { toast } from 'sonner';
+
+function mondayOf(date: string): string {
+  const d = new Date(`${date}T12:00:00`);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
 
 export default function DashboardPage() {
   const { profile } = useAuth();
@@ -21,39 +28,39 @@ export default function DashboardPage() {
   const totals = useMemo(() => calculateMealTotals(logEntries), [logEntries]);
   const meals = useMemo(() => groupByMeal(logEntries), [logEntries]);
 
-  const dailyBudget = goal?.daily_points_budget || 30;
+  const activityPointsEarned = earnedActivityPoints(activityEntries);
+  const baseBudget = goal?.daily_points_budget || 30;
+  const dailyBudget = baseBudget + activityPointsEarned;
   const weeklyPool = goal?.weekly_points_pool || 0;
   const usedPoints = totals.points;
   const remainingPoints = Math.max(dailyBudget - usedPoints, 0);
   const proteinTarget = goal?.protein_target_g || 0;
   const proteinUsed = totals.protein;
 
-  // Calculate weekly points used (last 7 days)
-  const [weeklyUsed, setWeeklyUsed] = useState(0);
-  useMemo(() => {
+  // Weekly pool: points eaten above each day's budget (incl. earned activity points), Monday–Sunday.
+  const [weeklyOverage, setWeeklyOverage] = useState(0);
+  useEffect(() => {
     if (!profile) return;
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const startDate = sevenDaysAgo.toISOString().slice(0, 10);
-    supabase
-      .from('food_log')
-      .select('points, logged_at')
-      .eq('user_id', profile.id)
-      .gte('logged_at', startDate)
-      .then(({ data }) => {
-        if (!data) return;
-        const dailyBudgets = {};
-        let totalUsed = 0;
-        const byDate: Record<string, number> = {};
-        data.forEach((e: { points: number; logged_at: string }) => {
-          byDate[e.logged_at] = (byDate[e.logged_at] || 0) + e.points;
-        });
-        Object.values(byDate).forEach((dayPoints) => {
-          totalUsed += Math.min(dayPoints, dailyBudget);
-        });
-        setWeeklyUsed(totalUsed);
+    const weekStart = mondayOf(date);
+    Promise.all([
+      supabase.from('food_log').select('points, logged_at').eq('user_id', profile.id).gte('logged_at', weekStart).lte('logged_at', date),
+      supabase.from('activity_log').select('bonus_points, logged_at').eq('user_id', profile.id).gte('logged_at', weekStart).lte('logged_at', date),
+    ]).then(([food, activity]) => {
+      const eaten: Record<string, number> = {};
+      (food.data ?? []).forEach((e: { points: number; logged_at: string }) => {
+        eaten[e.logged_at] = (eaten[e.logged_at] || 0) + e.points;
       });
-  }, [profile, date]);
+      const earned: Record<string, { bonus_points: number }[]> = {};
+      (activity.data ?? []).forEach((a: { bonus_points: number; logged_at: string }) => {
+        (earned[a.logged_at] ||= []).push(a);
+      });
+      const overage = Object.entries(eaten).reduce(
+        (sum, [day, points]) => sum + Math.max(points - baseBudget - earnedActivityPoints(earned[day] ?? []), 0),
+        0,
+      );
+      setWeeklyOverage(overage);
+    });
+  }, [profile, date, baseBudget, logEntries, activityEntries]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -120,7 +127,7 @@ export default function DashboardPage() {
         </div>
         <div className="rounded-2xl bg-card border border-border p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Veckopool</p>
-          <p className="text-lg font-bold">{formatPoints(Math.max(weeklyPool - Math.max(weeklyUsed - dailyBudget * 7, 0), 0))}</p>
+          <p className="text-lg font-bold">{formatPoints(Math.max(weeklyPool - weeklyOverage, 0))}</p>
         </div>
       </div>
 
@@ -150,6 +157,7 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold text-primary">Träning idag</p>
             <p className="text-xs text-primary/70">
               {activityEntries.length} aktivitet{activityEntries.length > 1 ? 'er' : ''} • {Math.round(activityKcal)} kcal
+              {activityPointsEarned > 0 && ` • +${formatPoints(activityPointsEarned)} points`}
             </p>
           </div>
           <Flame className="h-5 w-5 text-primary/50" />
