@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseIngredient } from '../ingredients';
+import { isHeading, parseIngredient } from '../ingredients';
 
 describe('parseIngredient', () => {
   it.each([
@@ -12,6 +12,9 @@ describe('parseIngredient', () => {
     ['4 äggulor (Från Sverige)', 'äggulor', 72],
     ['65 g babygrönkål', 'grönkål', 65],
     ['1 ½ dl grädde', 'grädde', 150],
+    ['4 skivor bacon', 'bacon', 60],
+    ['1 kruka färsk dragon', 'dragon', 25],
+    ['4 plankor till plankstek', 'plankor', 400],
   ])('%s', (line, name, grams) => {
     const parsed = parseIngredient(line);
     expect(parsed.name).toBe(name);
@@ -20,5 +23,18 @@ describe('parseIngredient', () => {
 
   it('leaves amount-less lines without a weight', () => {
     expect(parseIngredient('Salt och peppar').grams).toBeNull();
+  });
+});
+
+describe('isHeading', () => {
+  it.each([
+    ['Duchessemos', true],
+    ['Baconlindade haricots verts', true],
+    ['Garnering', true],
+    ['salt', false],
+    ['3 äggulor', false],
+    ['svartpeppar, nymalen', false],
+  ])('%s', (line, expected) => {
+    expect(isHeading(line)).toBe(expected);
   });
 });

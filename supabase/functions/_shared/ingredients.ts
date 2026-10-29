@@ -42,6 +42,13 @@ const DENSITIES: [RegExp, number][] = [
 
 // Typical weight of one piece, in grams.
 const PIECE_WEIGHTS: [RegExp, number][] = [
+  [/^skiv(a|or) .*(bacon|skinka|kalkon|salami|pancetta)/, 15],
+  [/^skiv(a|or) .*ost/, 10],
+  [/^skiv(a|or) .*(bröd|limpa|toast|levain)/, 35],
+  [/^skiv(a|or) /, 25],
+  // A pot or bunch of fresh herbs gives roughly a handful of leaves.
+  [/^(kruka|krukor|knippe|knippen) /, 25],
+  [/^(kvist|kvistar|blad) /, 1],
   [/^(burk|burkar|förp|förpackning|paket|pkt)\b|krossade tomater|kokosmjölk|bönor|kikärtor|majs/, 400],
   [/vitlök|klyft/, 5],
   [/schalottenlök/, 30],
@@ -102,10 +109,22 @@ const SYNONYMS: [RegExp, string][] = [
   [/(^|\s)soja$/, 'sojasås'],
   [/chili(frukt|peppar)?$/, 'chilipeppar färsk'],
   [/^svamp$/, 'champinjon'],
+  [/^(bifftomat|bifftomater|kvisttomat|kvisttomater|plommontomat|plommontomater|tomater)$/, 'tomat'],
+  [/^(körsbärstomat|körsbärstomater|cocktailtomat|cocktailtomater)$/, 'tomat körsbärstomat röd'],
+  [/^(citronsaft|pressad citron|saft av citron|citronjuice)$/, 'citronjuice färskpressad'],
+  [/^(limesaft|pressad lime|saft av lime|limejuice)$/, 'limejuice färskpressad'],
+  [/^(haricots? verts?|brytbönor|gröna bönor)$/, 'gröna bönor'],
+  [/^(bladpersilja|plattpersilja|krusig persilja|persiljeblad)$/, 'persilja blad'],
 ];
 
+// Equipment that recipes list among the ingredients ("4 plankor till plankstek").
+const NOT_FOOD = /^(plank(a|or)|grillspett|spett|träspett|tandpetare|bakplåtspapper|folie|aluminiumfolie|plastfolie|snöre|kökssnöre|bindgarn|form|bakform|ugnsform|muffinsform(ar)?|engångsform(ar)?)$/;
+
+// Lines that point to another part of the recipe ("3 msk beareduktion, se nedan").
+const REFERENCE = /\b(se nedan|se ovan|se recept|enligt recept|se under)\b/;
+
 // Seasonings that contribute no meaningful points.
-const NEGLIGIBLE = /^(salt( och peppar)?|peppar|svartpeppar|vitpeppar|kryddpeppar|cayennepeppar|oregano|basilika|timjan|rosmarin|spiskummin|paprikapulver|chiliflakes|chilipulver|curry(pulver)?|gurkmeja|lagerblad|kanel|muskot|kardemumma|vatten|is|dill|koriander|persilja|gräslök|mynta|[a-zåäö]*buljong[a-zåäö]*|[a-zåäö]*fond|ättika|vinäger|bakpulver|bikarbonat|jäst|vaniljsocker|citronskal|limeskal)$/;
+const NEGLIGIBLE = /^(salt( och peppar)?|peppar|svartpeppar|vitpeppar|kryddpeppar|cayennepeppar|oregano|basilika|timjan|rosmarin|spiskummin|paprikapulver|chiliflakes|chilipulver|curry(pulver)?|gurkmeja|lagerblad|kanel|muskot|kardemumma|vatten|is|dill|koriander|persilja|gräslök|mynta|dragon|torkad dragon|körvel|salvia|mejram|citronmeliss|[a-zåäö]*pepparkorn|rosépeppar|enbär|kryddnejlik[a-zåäö]*|nejlikor|stjärnanis|saffran|fänkålsfrö|senapsfrö|[a-zåäö]*buljong[a-zåäö]*|[a-zåäö]*fond|ättika|vinäger|bakpulver|bikarbonat|jäst|vaniljsocker|citronskal|limeskal)$/;
 
 const PREP_WORDS = /\b(finhackad|finhackade|hackad|hackade|grovhackad|riven|rivet|rivna|skivad|skivade|tärnad|tärnade|strimlad|strimlade|pressad|pressade|färsk|färska|fryst|frysta|kokt|kokta|smält|smälta|mjukt|rumsvarmt|rumstempererat|kallt|kall|ca|cirka|ungefär|gärna|valfri|valfritt|till servering|till stekning|till garnering|efter smak|för servering|eller mer|ev\.?)\b/g;
 
@@ -229,18 +248,25 @@ async function bestMatch(db: SupabaseClient, name: string) {
   return best;
 }
 
+// Section headings ("Duchessemos", "Baconlindade haricots verts") have no amount and start with a capital.
+export function isHeading(raw: string): boolean {
+  const t = raw.trim();
+  return !/\d|[½¼¾⅓⅔]/.test(t) && /^[A-ZÅÄÖ]/.test(t) && t.split(/\s+/).length <= 4 && !t.includes(',');
+}
+
 export async function matchIngredient(db: SupabaseClient, ingredient: { id: string; raw_text: string | null }) {
   const parsed = parseIngredient(ingredient.raw_text ?? '');
 
-  // Section headings ("Ris", "Topping") have no amount; spoonfuls of paprika are the spice.
+  // Spoonfuls of paprika are the spice, not the vegetable.
   const raw = (ingredient.raw_text ?? '').trim();
-  const isHeading = parsed.amount == null && !/\d/.test(raw) && /^[A-ZÅÄÖ]/.test(raw) && raw.split(/\s+/).length <= 2 && !raw.includes(',');
+  const heading = isHeading(raw);
   const isSpice = parsed.name === 'paprika' && /^(msk|tsk|krm)$/.test(parsed.unit ?? '');
+  const skipped = NOT_FOOD.test(parsed.name) || REFERENCE.test(raw.toLowerCase());
 
-  if (!parsed.name || isHeading || isSpice || NEGLIGIBLE.test(parsed.name)) {
+  if (!parsed.name || heading || isSpice || skipped || NEGLIGIBLE.test(parsed.name)) {
     await db.rpc('apply_ingredient_match', {
       p_ingredient_id: ingredient.id, p_food_id: null, p_amount: parsed.amount, p_unit: parsed.unit,
-      p_weight_g: parsed.grams ?? 0, p_confidence: 'high',
+      p_weight_g: 0, p_confidence: 'high',
     });
     return;
   }

@@ -11,6 +11,12 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { toLocalDate } from '@/lib/dates';
 
+// Mirrors isHeading in supabase/functions/_shared/ingredients.ts, which the matcher uses.
+function isSectionHeading(raw: string) {
+  const t = raw.trim();
+  return !/\d|[½¼¾⅓⅔]/.test(t) && /^[A-ZÅÄÖ]/.test(t) && t.split(/\s+/).length <= 4 && !t.includes(',');
+}
+
 export default function RecipeDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -207,6 +213,13 @@ export default function RecipeDetailPage() {
             {ingredients.map((ing) => {
               const scaledWeight = (ing.weight_g || 0) * scalingFactor;
               const scaledPoints = ing.points * scalingFactor;
+              if (!ing.food_id && isSectionHeading(ing.raw_text ?? '')) {
+                return (
+                  <h3 key={ing.id} className="pt-3 text-sm font-semibold text-muted-foreground">
+                    {ing.raw_text}
+                  </h3>
+                );
+              }
               return (
                 <div
                   key={ing.id}
@@ -215,7 +228,7 @@ export default function RecipeDetailPage() {
                   <div className="flex-1">
                     <p className="text-sm font-medium">{ing.raw_text || 'Okänd ingrediens'}</p>
                     <p className="text-xs text-muted-foreground">
-                      {Math.round(scaledWeight)}g
+                      {scaledWeight > 0 ? `${Math.round(scaledWeight)}g` : 'Räknas inte'}
                       {ing.confidence === 'low' && ' • Kontrollera ingrediens'}
                       {ing.confidence === 'unmatched' && ' • Hittades inte, räknas som 0'}
                     </p>
