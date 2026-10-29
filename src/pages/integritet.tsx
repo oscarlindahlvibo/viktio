@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="font-semibold mb-1">Vilka uppgifter behandlar vi?</h2>
             <p>
               E-post, namn, kön, födelsedatum, längd, vikt, mått, mål, matdagbok, träning, sömn, vatten, humör och vanor
-              som du själv registrerar. Om du kopplar Apple Hälsa eller Health Connect läser vi steg och träningspass därifrån.
+              som du själv registrerar. Om du kopplar Apple Hälsa eller Health Connect läser vi steg och vikt därifrån.
               Uppgifter om hälsa är känsliga personuppgifter och behandlas bara med ditt uttryckliga samtycke.
             </p>
           </section>
