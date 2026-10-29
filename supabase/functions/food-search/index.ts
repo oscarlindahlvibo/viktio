@@ -102,6 +102,10 @@ function mapOFFProduct(
   if (!name) return null;
 
   const n = (p.nutriments || {}) as Record<string, number>;
+  const kj = n['energy-kj_100g'] ?? (n['energy_100g'] != null ? n['energy_100g'] : undefined);
+  const kcal = n['energy-kcal_100g'] ?? (kj != null ? kj / 4.184 : undefined);
+  // Without an energy value the points would be a silent 0, so skip the product.
+  if (kcal == null) return null;
   const img = (p.image_front_small_url as string) || (p.image_url as string) || null;
   const imageUrl = img ? (img.startsWith('http') ? img : `https://images.openfoodfacts.org/images/products${img}`) : null;
 
@@ -111,7 +115,7 @@ function mapOFFProduct(
     image_url: imageUrl,
     package_size: (p.quantity as string) || null,
     barcode,
-    kcal: Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0),
+    kcal: Math.round(kcal),
     protein_g: Math.round((n['proteins_100g'] || 0) * 10) / 10,
     carbohydrate_g: Math.round((n['carbohydrates_100g'] || 0) * 10) / 10,
     fat_g: Math.round((n['fat_100g'] || 0) * 10) / 10,

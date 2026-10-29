@@ -183,6 +183,11 @@ export default function FoodSearchPage() {
               points_per_100g: pointsPer100g,
               points_per_serving: pointsPer100g,
               serving_description: r.serving_description,
+              nutrition: {
+                kcal: r.kcal, protein_g: r.protein_g, carbohydrate_g: r.carbohydrate_g, sugar_g: r.sugar_g,
+                fat_g: r.fat_g, saturated_fat_g: r.saturated_fat_g, fiber_g: r.fiber_g, sodium_mg: r.sodium_mg,
+                per_amount: 100, unit: 'g',
+              },
               category_name: undefined,
               category_slug: undefined,
             };

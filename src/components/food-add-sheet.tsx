@@ -48,6 +48,10 @@ export function FoodAddSheet({ food, mealType, onClose, onAdded }: FoodAddSheetP
   } | null>(null);
 
   useEffect(() => {
+    if (food.nutrition) {
+      setNutrition(food.nutrition);
+      return;
+    }
     supabase
       .from('food_nutrition')
       .select('*')
@@ -56,7 +60,7 @@ export function FoodAddSheet({ food, mealType, onClose, onAdded }: FoodAddSheetP
       .then(({ data }) => {
         if (data) setNutrition(data as typeof nutrition);
       });
-  }, [food.id]);
+  }, [food.id, food.nutrition]);
 
   // When unit changes, set default amount
   useEffect(() => {
@@ -120,43 +124,51 @@ export function FoodAddSheet({ food, mealType, onClose, onAdded }: FoodAddSheetP
 
     // If this is an external food (Open Food Facts), save it to DB first
     if (foodId.startsWith('off_') && nutrition) {
-      const { data: newFood, error: foodError } = await supabase
-        .from('foods')
-        .insert({
-          name: food.name,
-          brand: food.brand || null,
-          barcode: food.barcode || null,
-          package_size: food.package_size || null,
-          image_url: food.image_url || null,
-          status: 'user_created',
-          zero_point: false,
-          created_by: user.id,
-        })
-        .select('id')
-        .single();
+      // Reuse a product that someone already saved from the same barcode.
+      const existing = food.barcode
+        ? (await supabase.from('foods').select('id').eq('barcode', food.barcode).limit(1).maybeSingle()).data
+        : null;
+      if (existing) {
+        foodId = existing.id;
+      } else {
+        const { data: newFood, error: foodError } = await supabase
+          .from('foods')
+          .insert({
+            name: food.name,
+            brand: food.brand || null,
+            barcode: food.barcode || null,
+            package_size: food.package_size || null,
+            image_url: food.image_url || null,
+            status: 'user_created',
+            zero_point: false,
+            created_by: user.id,
+          })
+          .select('id')
+          .single();
 
-      if (foodError || !newFood) {
-        toast.error('Kunde inte spara maten');
-        setSaving(false);
-        return;
+        if (foodError || !newFood) {
+          toast.error('Kunde inte spara maten');
+          setSaving(false);
+          return;
+        }
+
+        foodId = newFood.id;
+
+        await supabase.from('food_nutrition').insert({
+          food_id: foodId,
+          kcal: nutrition.kcal,
+          protein_g: nutrition.protein_g,
+          carbohydrate_g: nutrition.carbohydrate_g,
+          sugar_g: nutrition.sugar_g,
+          fat_g: nutrition.fat_g,
+          saturated_fat_g: nutrition.saturated_fat_g,
+          fiber_g: nutrition.fiber_g,
+          sodium_mg: nutrition.sodium_mg,
+          salt_g: 0,
+          per_amount: nutrition.per_amount || 100,
+          unit: nutrition.unit || 'g',
+        });
       }
-
-      foodId = newFood.id;
-
-      await supabase.from('food_nutrition').insert({
-        food_id: foodId,
-        kcal: nutrition.kcal,
-        protein_g: nutrition.protein_g,
-        carbohydrate_g: nutrition.carbohydrate_g,
-        sugar_g: nutrition.sugar_g,
-        fat_g: nutrition.fat_g,
-        saturated_fat_g: nutrition.saturated_fat_g,
-        fiber_g: nutrition.fiber_g,
-        sodium_mg: nutrition.sodium_mg,
-        salt_g: 0,
-        per_amount: nutrition.per_amount || 100,
-        unit: nutrition.unit || 'g',
-      });
     }
 
     const { data: engineVersion } = await supabase
@@ -167,7 +179,7 @@ export function FoodAddSheet({ food, mealType, onClose, onAdded }: FoodAddSheetP
 
     const { error } = await supabase.from('food_log').insert({
       user_id: user.id,
-      food_id: food.id,
+      food_id: foodId,
       name: food.name,
       meal_type: selectedMeal,
       quantity: amount,

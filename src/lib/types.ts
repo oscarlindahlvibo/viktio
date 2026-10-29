@@ -314,4 +314,12 @@ export interface FoodSearchResult {
   serving_description: string | null;
   category_name?: string;
   category_slug?: string;
+  /** Per-100 g values for results that are not in the database yet (Open Food Facts). */
+  nutrition?: ExternalNutrition;
+}
+
+export interface ExternalNutrition {
+  kcal: number; protein_g: number; carbohydrate_g: number; sugar_g: number;
+  fat_g: number; saturated_fat_g: number; fiber_g: number; sodium_mg: number;
+  per_amount: number; unit: string;
 }
